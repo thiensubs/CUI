@@ -198,3 +198,28 @@ jobs:
           name: macos-${{ matrix.shaping }}-screenshots
           path: build/**/*.png
           if-no-files-found: ignore
+
+  cui-iso:
+    name: cui-iso (${{ matrix.cc }}, ASan + UBSan)
+    timeout-minutes: 45
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        cc: [gcc, clang]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: sh .github/apt-install.sh ninja-build libx11-dev libgl-dev
+      - name: Configure the extension against this checkout
+        run: cmake -S extensions/cui-iso -B build-iso -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=${{ matrix.cc }} -DCUI_ISO_CUI_DIR=$GITHUB_WORKSPACE -DCUI_ISO_SANITIZE=ON
+      - name: Build
+        run: cmake --build build-iso
+      - name: Tests
+        run: ctest --test-dir build-iso --output-on-failure
+      - name: Examples must need no private header
+        run: |
+          for f in examples/top10.c examples/pipeline.c; do
+            ${{ matrix.cc }} -std=c99 -Wall -Wextra -Werror -fsyntax-only \
+              -Iextensions/cui-iso -Iinclude "extensions/cui-iso/$f"
+          done
