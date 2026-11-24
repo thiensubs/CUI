@@ -9,7 +9,9 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # (undefined __asan_init), so every target in here is built the same way.
 option(CUI_ISO_SANITIZE "Build every target with ASan and UBSan" OFF)
 if(CUI_ISO_SANITIZE AND NOT MSVC)
-    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    # no recovery: a recoverable UBSan report otherwise only prints and the
+    # test still passes, so the gate would not catch anything.
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer -fno-sanitize-recover=all)
     add_link_options(-fsanitize=address,undefined)
 endif()
 

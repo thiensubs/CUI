@@ -223,3 +223,9 @@ jobs:
             ${{ matrix.cc }} -std=c99 -Wall -Wextra -Werror -fsyntax-only \
               -Iextensions/cui-iso -Iinclude "extensions/cui-iso/$f"
           done
+      - name: Installed headers match the source headers
+        run: |
+          for h in cui_iso.h cui_iso_opts.h; do
+            diff <(sed 's/\xe2\x80\x94/--/g' "extensions/cui-iso/$h") \
+                 "extensions/cui-iso/include/cui/$h"
+          done
