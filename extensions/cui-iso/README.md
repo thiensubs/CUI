@@ -254,6 +254,9 @@ cmake --install build --prefix /usr/local
 ```
 
 That puts `libcui_iso.a` in `lib/` and the public headers in `include/cui/`.
+The header directory follows `CMAKE_INSTALL_INCLUDEDIR`, so
+`-DCMAKE_INSTALL_INCLUDEDIR=headers` installs them in `headers/` and the
+exported package points there.
 Include `<cui/cui_iso.h>` for the scene, camera and helpers, and
 `<cui/cui_iso_opts.h>` for the named-field solids.
 
@@ -261,6 +264,13 @@ Include `<cui/cui_iso.h>` for the scene, camera and helpers, and
 `extensions/cui-iso` layout) or beside a vendored one (`../vendor/CUI`).
 Otherwise configure with `-DCUI_ISO_CUI_DIR=/path/to/the/CUI/source/tree`.
 
-One symbol is required from CUI: `cui_push_clip_checked`, the clip push that
-reports whether the clip stack had room. A scene with bounds cannot be
-clipped safely without it, so link against a CUI that has it.
+Two symbols are required from CUI: `cui_push_clip_checked`, the clip push that
+reports whether the clip stack had room, and `cui_current_clip`, which reports
+the clip that is really in effect. A scene with bounds cannot be clipped
+safely without the first, and picking cannot agree with what was painted
+without the second, so link against a CUI that has both.
+
+The extension has its own export macro, `CUI_ISO_API`, and does not use CUI's
+`CUI_API`. That matters on Windows: a consumer of a shared CUI reads every
+`CUI_API` declaration as an import, which is right for CUI's functions and
+wrong for the extension's own.
