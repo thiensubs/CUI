@@ -60,7 +60,7 @@ static inline cui_color cui__xa(cui_color c, float a) {
     return c;
 }
 
-void cui_push_clip(cui_ctx *ui, cui_rect r) {
+bool cui_push_clip_checked(cui_ctx *ui, cui_rect r) {
     cui_draw_list *dl = &ui->dl;
     cui_xform x = cui__xf(ui);
     float s = ui->scale;
@@ -69,8 +69,12 @@ void cui_push_clip(cui_ctx *ui, cui_rect r) {
     float x0 = floorf(px.x), y0 = floorf(px.y), x1 = ceilf(px.x + px.w), y1 = ceilf(px.y + px.h);
     px.x = x0; px.y = y0; px.w = x1 - x0; px.h = y1 - y0;
     cui_rect cur = dl->clip_stack[dl->clip_depth - 1];
-    if (dl->clip_depth < 64) dl->clip_stack[dl->clip_depth++] = cui__rect_intersect(cur, px);
+    if (dl->clip_depth >= 64) return false;
+    dl->clip_stack[dl->clip_depth++] = cui__rect_intersect(cur, px);
+    return true;
 }
+
+void cui_push_clip(cui_ctx *ui, cui_rect r) { (void)cui_push_clip_checked(ui, r); }
 
 void cui_pop_clip(cui_ctx *ui) { if (ui->dl.clip_depth > 1) ui->dl.clip_depth--; }
 

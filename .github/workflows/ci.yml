@@ -221,11 +221,15 @@ jobs:
         run: |
           for f in examples/top10.c examples/pipeline.c; do
             ${{ matrix.cc }} -std=c99 -Wall -Wextra -Werror -fsyntax-only \
-              -Iextensions/cui-iso -Iinclude "extensions/cui-iso/$f"
+              -Iextensions/cui-iso/include -Iinclude "extensions/cui-iso/$f"
           done
-      - name: Installed headers match the source headers
+      - name: Public headers compile standalone
         run: |
           for h in cui_iso.h cui_iso_opts.h; do
-            diff <(sed 's/\xe2\x80\x94/--/g' "extensions/cui-iso/$h") \
-                 "extensions/cui-iso/include/cui/$h"
+            printf '#include <cui/%s>\nint main(void) { return 0; }\n' "$h" \
+              | ${{ matrix.cc }} -std=c99 -Wall -Wextra -Werror -fsyntax-only \
+                  -x c -Iextensions/cui-iso/include -Iinclude -
+            printf '#include <cui/%s>\nint main() { return 0; }\n' "$h" \
+              | ${{ matrix.cc }} -std=c++11 -Wall -Wextra -Werror -fsyntax-only \
+                  -x c++ -Iextensions/cui-iso/include -Iinclude -
           done
