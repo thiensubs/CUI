@@ -117,6 +117,12 @@ rewrite that preceded it. Each row names the code that now carries the fix.
 
 ### What this pass does not claim
 
+- The extension needs one new symbol from CUI, `cui_push_clip_checked`, and
+  this pass adds it to CUI itself (`include/cui/cui.h`, `src/cui_draw.c`), so
+  CUI and the extension ship together. A consumer who takes only
+  `extensions/cui-iso` must take that CUI change too; the configure step
+  checks for the symbol and stops with the instruction instead of failing at
+  link time.
 - The three new test assertions were checked against deliberately broken
   code: removing the label guard, inverting the depth comparator and ignoring
   the chamfer each make the matching test fail. They are not a proof that no

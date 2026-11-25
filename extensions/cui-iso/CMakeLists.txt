@@ -42,6 +42,24 @@ if(NOT EXISTS "${CUI_ISO_CUI_DIR}/CMakeLists.txt")
 endif()
 get_filename_component(CUI_ISO_CUI_DIR "${CUI_ISO_CUI_DIR}" ABSOLUTE)
 
+# The library needs one symbol from CUI: cui_push_clip_checked, the clip push
+# that reports whether the clip stack had room. Stock CUI has only
+# cui_push_clip, which refuses silently at the 64-deep limit: the scene would
+# draw outside its bounds, and the matching pop would take the caller's own
+# clip. Check for the symbol here, so a CUI without it fails with a sentence
+# instead of a link error.
+if(EXISTS "${CUI_ISO_CUI_DIR}/include/cui/cui.h")
+    file(READ "${CUI_ISO_CUI_DIR}/include/cui/cui.h" _cui_iso_cui_header)
+    string(FIND "${_cui_iso_cui_header}" "cui_push_clip_checked" _cui_iso_has_checked_clip)
+    if(_cui_iso_has_checked_clip EQUAL -1)
+        message(FATAL_ERROR
+            "The CUI checkout at '${CUI_ISO_CUI_DIR}' has no "
+            "cui_push_clip_checked(), which cui-iso needs to clip a scene "
+            "without taking the caller's clip. Use a CUI that has it: "
+            "upstream PR #129 adds it to CUI.")
+    endif()
+endif()
+
 add_subdirectory(${CUI_ISO_CUI_DIR} ${CMAKE_CURRENT_BINARY_DIR}/cui)
 include(${CUI_ISO_CUI_DIR}/cmake/CuiApp.cmake)
 
