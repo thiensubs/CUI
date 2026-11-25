@@ -217,6 +217,50 @@ jobs:
         run: cmake --build build-iso
       - name: Tests
         run: ctest --test-dir build-iso --output-on-failure
+      - name: The installed package refuses a CUI without the clip APIs
+        run: |
+          set -eu
+
+          build_dir="${1:-build-iso}"
+          prefix="$PWD/iso-prefix"
+
+          cmake --install "$build_dir" --prefix "$prefix"
+
+          for kind in good old; do
+              mkdir -p "iso-fake-$kind/include/cui" "iso-fake-$kind/lib/cmake/cui"
+              {
+                  echo 'add_library(cui::cui INTERFACE IMPORTED)'
+                  echo 'set_target_properties(cui::cui PROPERTIES'
+                  echo "    INTERFACE_INCLUDE_DIRECTORIES \"$PWD/iso-fake-$kind/include\")"
+                  echo 'set(cui_FOUND TRUE)'
+              } > "iso-fake-$kind/lib/cmake/cui/cuiConfig.cmake"
+          done
+
+          printf 'int cui_push_clip_checked(void);\nint cui_current_clip(void);\n' > iso-fake-good/include/cui/cui.h
+          printf 'int cui_push_clip(void);\n' > iso-fake-old/include/cui/cui.h
+
+          mkdir -p iso-consumer
+          {
+              echo 'cmake_minimum_required(VERSION 3.14)'
+              echo 'project(iso_consumer LANGUAGES C)'
+              echo 'find_package(cui_iso CONFIG REQUIRED)'
+          } > iso-consumer/CMakeLists.txt
+
+          cmake -S iso-consumer -B iso-consumer-build \
+              -DCMAKE_PREFIX_PATH="$prefix" \
+              -Dcui_DIR="$PWD/iso-fake-good/lib/cmake/cui"
+
+          # The same build directory, now pointed at a CUI without the clip APIs. The
+          # check has to read the CUI that was found now: find_file caches its result,
+          # so a stale header would let this configure pass.
+          if cmake -S iso-consumer -B iso-consumer-build \
+                  -DCMAKE_PREFIX_PATH="$prefix" \
+                  -Dcui_DIR="$PWD/iso-fake-old/lib/cmake/cui" > iso-consumer-old.log 2>&1; then
+              echo "::error::the installed package accepted a CUI without the clip APIs"
+              exit 1
+          fi
+          grep -q "does not have them" iso-consumer-old.log
+          echo "the installed package refuses a CUI without the clip APIs"
       - name: Examples must need no private header
         run: |
           for f in examples/top10.c examples/pipeline.c; do
