@@ -76,6 +76,17 @@ bool cui_push_clip_checked(cui_ctx *ui, cui_rect r) {
 
 void cui_push_clip(cui_ctx *ui, cui_rect r) { (void)cui_push_clip_checked(ui, r); }
 
+cui_rect cui_current_clip(cui_ctx *ui) {
+    if (!ui) return (cui_rect){ 0, 0, 0, 0 };
+    cui_draw_list *dl = &ui->dl;
+    cui_rect px = dl->clip_stack[dl->clip_depth - 1];
+    /* The stack is in pixels and the callers' coordinates are in logical units.
+     * Dividing by the scale is the conversion CUI's own hit testing uses. */
+    float s = ui->scale > 0.0f ? ui->scale : 1.0f;
+    cui_rect r = { px.x / s, px.y / s, px.w / s, px.h / s };
+    return r;
+}
+
 void cui_pop_clip(cui_ctx *ui) { if (ui->dl.clip_depth > 1) ui->dl.clip_depth--; }
 
 static void cui__set_texture(cui_ctx *ui, cui_texture t) { ui->dl.cur_tex = t; }

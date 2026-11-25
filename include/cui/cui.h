@@ -5078,12 +5078,25 @@ CUI_API void cui_draw_arc(cui_ctx *ui, cui_vec2 center, float radius, float a0, 
 CUI_API void cui_draw_text(cui_ctx *ui, cui_font font, float size, cui_vec2 pos, cui_color color, const char *text, int len);
 CUI_API void cui_draw_icon(cui_ctx *ui, const char *icon, cui_rect r, float size, cui_color color);
 CUI_API void cui_draw_image(cui_ctx *ui, cui_texture tex, cui_rect r, cui_rect uv, cui_corners radius, cui_color tint);
+/* Capabilities. A consumer that needs one of these has to be able to tell
+ * whether the CUI it found has it: the version number does not say, because a
+ * patch release can add one. */
+#define CUI_HAS_PUSH_CLIP_CHECKED 1
+#define CUI_HAS_CURRENT_CLIP 1
+
 CUI_API void cui_push_clip(cui_ctx *ui, cui_rect r);
 /* Pushes a clip and reports whether it was applied. The clip stack is 64 deep;
  * past that a push is refused, and the matching pop would then remove the
  * caller's own clip. Use this when the push may fail: on false the clip was
  * NOT applied, so do not call cui_pop_clip for it. */
 CUI_API bool cui_push_clip_checked(cui_ctx *ui, cui_rect r);
+/* The clip in effect right now, in the same coordinate space cui_push_clip
+ * takes: the whole viewport when nothing has been pushed, and from then on the
+ * intersection with the clip already on the stack. A consumer that has to
+ * agree with what CUI painted -- hit testing, for one -- needs this, because
+ * the clip that decides is the intersection of every clip on the stack and a
+ * clip the consumer never pushed is invisible from the outside. */
+CUI_API cui_rect cui_current_clip(cui_ctx *ui);
 CUI_API void cui_pop_clip(cui_ctx *ui);
 
 /* Canvas: a box of the given size that you paint yourself. The callback
