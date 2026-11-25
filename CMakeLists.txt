@@ -143,9 +143,14 @@ endif()
 add_library(cui::cui ALIAS cui)
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/CuiApp.cmake)   # cui_app_target(), for apps that link CUI
 
+# The install layout is decided before the target is defined: the export
+# records the include directory, and a hardcoded "include" points at the
+# wrong place when the consumer installs the headers somewhere else
+# (-DCMAKE_INSTALL_INCLUDEDIR=headers).
+include(GNUInstallDirs)
 target_include_directories(cui PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>)
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
 if(CUI_TEXT_SHAPING)
     target_sources(cui PRIVATE src/cui_bidi.c src/cui_shape.c)
@@ -293,7 +298,6 @@ if(CUI_BUILD_TESTS)
 endif()
 
 # Install
-include(GNUInstallDirs)
 install(TARGETS cui EXPORT cuiTargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
